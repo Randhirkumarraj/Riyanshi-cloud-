@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Riyanshi Cloud - Fully Working</title>
+    <!-- Fonts & Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- JSZip for Zip Download Feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* ==========================================
+           CSS STYLES
+        ========================================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg-color: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+            --card-hover: rgba(255, 255, 255, 0.15);
+        }
+        body.light-theme {
+            --bg-color: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-color: #1a1a1a;
+            --card-hover: rgba(255, 255, 255, 0.6);
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-color); color: var(--text-color);
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+            padding: 20px; transition: all 0.4s ease; overflow-x: hidden;
+        }
+
+        /* Screen Toggle */
+        #login-screen {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 80vh; width: 100%;
+        }
+        #dashboard-screen {
+            display: none; width: 100%; animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-container {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 25px;
+            width: 100%; max-width: 1300px; padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap;}
+        header h2 { font-weight: 600; font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        header .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;}
+        
+        input[type="text"], input[type="url"], input[type="password"] {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 10px 15px; border-radius: 12px; color: var(--text-color); outline: none; font-family: 'Poppins', sans-serif;
+            width: 100%;
+        }
+        input::placeholder { color: inherit; opacity: 0.7; }
+        
+        .btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-color); padding: 10px 18px; border-radius: 12px;
+            cursor: pointer; text-decoration: none; display: inline-flex; justify-content: center; align-items: center; gap: 8px; transition: 0.3s; font-weight: 500;
+            border: none; outline: none;
+        }
+        .btn:hover { background: var(--card-hover); transform: translateY(-2px); }
+        .btn.delete { background: rgba(244, 67, 54, 0.6); color: white;}
+        .btn.view { background: rgba(76, 175, 80, 0.6); color: white;}
+        .btn.print { background: rgba(33, 150, 243, 0.6); color: white;}
+        .btn.zip { background: linear-gradient(45deg, #ff9a9e, #fecfef); color: #000; font-weight: 600; border: none; }
+        
+        .dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: var(--glass-bg); padding: 15px; border-radius: 18px; text-align: center; border: 1px solid var(--glass-border); box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+        .stat-card h3 { font-size: 13px; margin-bottom: 5px; opacity: 0.9; }
+        .stat-card h2 { font-size: 24px; font-weight: 600; }
+        
+        .action-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .upload-zone { border: 2px dashed var(--glass-border); padding: 30px; text-align: center; border-radius: 18px; cursor: pointer; transition: 0.3s; background: var(--glass-bg); }
+        .upload-zone:hover, .upload-zone.dragover { background: var(--card-hover); border-color: #fff; }
+        .link-zone { padding: 30px; border-radius: 18px; border: 1px solid var(--glass-border); background: var(--glass-bg); display:flex; flex-direction:column; justify-content:center; align-items:center; gap:15px;}
+        .link-zone-form { display: flex; width: 100%; gap: 10px; flex-direction: row;}
+
+        /* GRID VIEW */
+        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .file-card { background: var(--glass-bg); border-radius: 18px; border: 1px solid var(--glass-border); overflow: hidden; display: flex; flex-direction: column; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: fadeIn 0.5s ease;}
+        .file-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.2); }
+        .file-thumb { width: 100%; height: 140px; background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative;}
+        .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .file-thumb i { font-size: 3.5rem; opacity: 0.8; }
+        .file-info-box { padding: 15px; flex-grow: 1; display:flex; flex-direction:column; justify-content:space-between;}
+        .file-info-box p { margin-bottom: 5px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-info-box small { font-size: 11px; opacity: 0.7; }
+        .file-actions-row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
+        .file-actions-row .btn { padding: 8px; flex-grow: 1; text-align: center; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(15px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--bg-color); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px; width: 90%; max-width: 1000px; height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;}
+        .modal-controls { display: flex; gap: 10px; }
+        .close-btn { cursor: pointer; font-size: 1.5rem; background: none; border: none; color: white; padding: 0 5px;}
+        .preview-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: rgba(0,0,0,0.5); border-radius: 12px; }
+        .preview-container img, .preview-container video { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-container iframe { width: 100%; height: 100%; border: none; background: white;}
+
+        /* Mobile UI Fixes */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .glass-container { padding: 15px; border-radius: 15px; width: 100%; }
+            header { flex-direction: column; text-align: center; }
+            header .controls { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: 10px; }
+            #searchInput { grid-column: 1 / -1; } 
+            .action-panels { grid-template-columns: 1fr !important; }
+            .link-zone-form { flex-direction: column !important; gap: 10px; }
+            .link-zone-form input, .link-zone-form button { width: 100% !important; flex: none !important; }
+            .dashboard-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+            .stat-card { padding: 10px !important; }
+            .stat-card h2 { font-size: 20px !important; }
+            .file-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 12px !important; }
+            .file-thumb { height: 110px !important; }
+            .file-info-box { padding: 10px !important; }
+            .file-actions-row .btn { padding: 6px 5px !important; font-size: 12px !important; }
+            .modal-content { width: 95% !important; height: 90vh !important; padding: 15px !important; }
+            .modal-header { flex-direction: column; gap: 10px; align-items: flex-start !important; }
+            .modal-controls { width: 100%; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+
+    <!-- ==========================================
+         LOGIN SCREEN
+    ========================================== -->
+    <div id="login-screen">
+        <div class="glass-container" style="max-width: 400px; text-align: center; margin:auto;">
+            <h2 style="margin-bottom: 5px;"><i class="fas fa-cloud"></i> Riyanshi Cloud</h2>
+            <p style="opacity:0.8; font-size:14px; margin-bottom: 20px;">Secure Local Storage App</p>
+            
+            <form onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="text" id="username" placeholder="Username (admin)" required>
+                <input type="password" id="password" placeholder="Password (admin123)" required>
+                <button type="submit" class="btn" style="background: rgba(255,255,255,0.2); padding: 12px;">
+                    <i class="fas fa-sign-in-alt"></i> Login to Cloud
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MAIN DASHBOARD
+    ========================================== -->
+    <div id="dashboard-screen">
+        <div class="glass-container">
+            <header>
+                <h2><i class="fas fa-cloud" style="color: #4CAF50;"></i> Riyanshi Cloud</h2>
+                <div class="controls">
+                    <input type="text" id="searchInput" placeholder="🔍 Search files..." onkeyup="searchFiles()">
+                    <button class="btn zip" onclick="downloadZip()"><i class="fas fa-file-archive"></i> Zip All</button>
+                    <button onclick="toggleTheme()" class="btn" style="padding: 10px 15px;"><i class="fas fa-moon"></i></button>
+                    <button onclick="handleLogout()" class="btn" style="background: rgba(255,255,255,0.1);"><i class="fas fa-sign-out-alt"></i> Exit</button>
+                </div>
+            </header>
+
+            <div class="dashboard-stats">
+                <div class="stat-card"><h3>Total</h3><h2 id="stat-total">0</h2></div>
+                <div class="stat-card"><h3>Photos</h3><h2 id="stat-photos">0</h2></div>
+                <div class="stat-card"><h3>Videos</h3><h2 id="stat-videos">0</h2></div>
+                <div class="stat-card"><h3>PDFs</h3><h2 id="stat-pdfs">0</h2></div>
+                <div class="stat-card"><h3>Links</h3><h2 id="stat-links">0</h2></div>
+            </div>
+
+            <div class="action-panels">
+                <!-- File Upload -->
+                <div class="upload-zone" id="drop-zone">
+                    <i class="fas fa-file-upload fa-3x" style="margin-bottom:15px; color:#8ec5fc;"></i>
+                    <h3 style="margin-bottom:5px;">Upload Files</h3>
+                    <p style="font-size:12px; opacity:0.8;">Click here or Drag & Drop</p>
+                    <input type="file" id="fileInput" hidden multiple onchange="handleFileUpload(event)">
+                </div>
+                
+                <!-- Link Upload -->
+                <div class="link-zone">
+                    <h3 style="margin-bottom:5px;"><i class="fas fa-link" style="color:#ff9a9e;"></i> Save Web Link</h3>
+                    <form onsubmit="handleLinkUpload(event)" class="link-zone-form">
+                        <input type="text" id="linkName" placeholder="Title (e.g. YouTube)" required style="flex:1;">
+                        <input type="url" id="linkUrl" placeholder="https://..." required style="flex:2;">
+                        <button type="submit" class="btn view"><i class="fas fa-save"></i></button>
+                    </form>
+                </div>
+            </div>
+
+            <h3 style="border-bottom: 1px solid var(--glass-border); padding-bottom:10px; margin-bottom: 20px;">Storage</h3>
+            <div class="file-grid" id="fileList">
+                <!-- Cards will be dynamically inserted here by JS -->
+            </div>
+            <p id="emptyMessage" style="text-align:center; opacity:0.7; display:none; grid-column: 1 / -1; padding: 20px;">No files or links found.</p>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         PREVIEW MODAL
+    ========================================== -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle" style="margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%; font-size:16px;">Preview</h3>
+                <div class="modal-controls">
+                    <button class="btn print" onclick="printPreview()" title="Print"><i class="fas fa-print"></i></button>
+                    <button class="close-btn" onclick="closePreview()"><i class="fas fa-times-circle"></i></button>
+                </div>
+            </div>
+            <div class="preview-container" id="previewContainer"></div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC (FULLY WORKING DB)
+    ========================================== -->
+    <script>
+        // --- 1. LOCAL DATABASE (IndexedDB) SETUP ---
+        let db;
+        let objUrls = []; // Track URLs to prevent memory leaks
+
+        const request = indexedDB.open("RiyanshiCloudDB", 1);
+        
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('files')) {
+                db.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            checkLoginState();
+        };
+
+        request.onerror = function(event) {
+            alert("Database Error: " + event.target.errorCode);
+        };
+
+
+        // --- 2. AUTHENTICATION LOGIC ---
+        function checkLoginState() {
+            if (sessionStorage.getItem('loggedIn') === 'true') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard-screen').style.display = 'block';
+                loadFiles();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            let u = document.getElementById('username').value;
+            let p = document.getElementById('password').value;
+            // Simple hardcoded check for demo, can be anything really.
+            if(u === 'admin' && p === 'admin123') {
+                sessionStorage.setItem('loggedIn', 'true');
+                checkLoginState();
+            } else {
+                alert("Incorrect username or password. Hint: admin / admin123");
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('loggedIn');
+            document.getElementById('dashboard-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+
+        // --- 3. THEME TOGGLE ---
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        }
+        window.onload = () => {
+            if (localStorage.getItem('theme') === 'light') { document.body.classList.replace('dark-theme', 'light-theme'); }
+        }
+
+
+        // --- 4. UPLOAD LOGIC ---
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('click', () => document.getElementById('fileInput').click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) processFiles(e.dataTransfer.files);
+        });
+
+        function handleFileUpload(e) {
+            if (e.target.files.length > 0) processFiles(e.target.files);
+        }
+
+        function processFiles(files) {
+            for(let i=0; i<files.length; i++) {
+                let file = files[i];
+                let ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'unknown';
+                
+                let category = 'Docs';
+                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) category = 'Photos';
+                else if (['mp4', 'mkv', 'webm', 'ogg', 'avi', 'mov'].includes(ext)) category = 'Videos';
+                else if (ext === 'pdf') category = 'PDFs';
+
+                let transaction = db.transaction(['files'], 'readwrite');
+                let store = transaction.objectStore('files');
+                
+                store.add({
+                    filename: file.name,
+                    type: ext,
+                    category: category,
+                    data: file, // Store the physical File object inside IndexedDB
+                    isLink: false,
+                    date: new Date().getTime()
+                });
+                
+                transaction.oncomplete = () => loadFiles();
+            }
+        }
+
+        function handleLinkUpload(e) {
+            e.preventDefault();
+            let name = document.getElementById('linkName').value;
+            let url = document.getElementById('linkUrl').value;
+            
+            let transaction = db.transaction(['files'], 'readwrite');
+            let store = transaction.objectStore('files');
+            
+            store.add({
+                filename: name,
+                type: 'link',
+                category: 'Links',
+                data: url, 
+                isLink: true,
+                date: new Date().getTime()
+            });
+            
+            transaction.oncomplete = () => {
+                document.getElementById('linkName').value = '';
+                document.getElementById('linkUrl').value = '';
+                loadFiles();
+            };
+        }
+
+
+        // --- 5. RENDER LOGIC ---
+        function loadFiles() {
+            let transaction = db.transaction(['files'], 'readonly');
+            let store = transaction.objectStore('files');
+            let request = store.getAll();
+            
+            request.onsuccess = function() {
+                let files = request.result;
+                
+                // Sort Descending by Date
+                files.sort((a,b) => b.date - a.date);
+                
+                let fileList = document.getElementById('fileList');
+                fileList.innerHTML = ''; // Clear UI
+                
+                // Clear old object URLs from memory
+                objUrls.forEach(url => URL.revokeObjectURL(url));
+                objUrls = [];
+
+                let stats = { Total: files.length, Photos: 0, Videos: 0, PDFs: 0, Links: 0 };
+                
+                if (files.length === 0) {
+                    document.getElementById('emptyMessage').style.display = 'block';
+                } else {
+                    document.getElementById('emptyMessage').style.display = 'none';
+                }
+
+                files.forEach(f => {
+                    if (stats[f.category] !== undefined) stats[f.category]++;
+                    
+                    let card = document.createElement('div');
+                    card.className = 'file-card';
+                    
+                    let dateStr = new Date(f.date).toLocaleString('en-US', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+                    
+                    let thumbHtml = '';
+                    let actionsHtml = '';
+                    let fileUrl = '';
+                    
+                    if (f.isLink) {
+                        thumbHtml = `<i class="fas fa-globe" style="color: #9C27B0; font-size: 3.5rem;"></i>`;
+                        actionsHtml = `
+                            <a href="${f.data}" target="_blank" class="btn view" title="Open"><i class="fas fa-external-link-alt"></i></a>
+                            <button onclick="deleteFile(${f.id})" class="btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+                        `;
+                    } else {
+                        fileUrl = URL.createObjectURL(f.data);
+                        objUrls.push(fileUrl);
+                        
+                        if (f.category === 'Photos') {
+                            thumbHtml = `<img src="${fileUrl}" alt="img">`;
+                        } else if (f.category === 'Videos') {
+                            thumbHtml = `<i class="fas fa-play-circle" style="color: #2196F3; font-size: 3.5rem;"></i>`;
+                        } else if (f.category === 'PDFs') {
+                            thumbHtml = `<i class="fas fa-file-pdf" style="color: #f44336; font-size: 3.5rem;"></i>`;
+                        } else {
+                            thumbHtml = `<i class="fas fa-file-alt" style="font-size: 3.5rem;"></i>`;
+                        }
+                        
+                        actionsHtml = `
+                            <button onclick="openPreview('${fileUrl}', '${f.type}', '${f.filename}')" class="btn view"><i class="fas fa-eye"></i></button>
+                            <a href="${fileUrl}" download="${f.filename}" class="btn"><i class="fas fa-download"></i></a>
+                            <button onclick="deleteFile(${f.id})" class="btn delete" title="Delete"><i class="fas fa-trash"></i></button>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="file-thumb">
+                            ${thumbHtml}
+                            <span style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:#fff; font-size:10px; padding:3px 8px; border-radius:10px;">${f.category}</span>
+                        </div>
+                        <div class="file-info-box">
+                            <div>
+                                <p class="filename" title="${f.filename}">${f.filename}</p>
+                                <small>⏰ ${dateStr}</small>
+                            </div>
+                            <div class="file-actions-row">${actionsHtml}</div>
+                        </div>
+                    `;
+                    fileList.appendChild(card);
+                });
+                
+                // Update Stats
+                document.getElementById('stat-total').innerText = stats.Total;
+                document.getElementById('stat-photos').innerText = stats.Photos;
+                document.getElementById('stat-videos').innerText = stats.Videos;
+                document.getElementById('stat-pdfs').innerText = stats.PDFs;
+                document.getElementById('stat-links').innerText = stats.Links;
+            };
+        }
+
+        // --- 6. DELETE LOGIC ---
+        function deleteFile(id) {
+            if(confirm('Delete this item permanently?')) {
+                let transaction = db.transaction(['files'], 'readwrite');
+                let store = transaction.objectStore('files');
+                store.delete(id);
+                transaction.oncomplete = () => loadFiles();
+            }
+        }
+
+        // --- 7. SEARCH LOGIC ---
+        function searchFiles() {
+            let input = document.getElementById('searchInput').value.toLowerCase();
+            let cards = document.getElementsByClassName('file-card');
+            for (let card of cards) {
+                let text = card.querySelector('.filename').innerText.toLowerCase();
+                card.style.display = text.includes(input) ? "flex" : "none";
+            }
+        }
+
+        // --- 8. PREVIEW & PRINT LOGIC ---
+        let currentPrintUrl = '';
+        function openPreview(url, type, name) {
+            document.getElementById('modalTitle').innerText = name;
+            currentPrintUrl = url;
+            
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = ''; 
+
+            const imgTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            const vidTypes = ['mp4', 'webm', 'ogg', 'mov'];
+
+            if (imgTypes.includes(type.toLowerCase())) {
+                container.innerHTML = `<img src="${url}" alt="Preview">`;
+            } else if (vidTypes.includes(type.toLowerCase())) {
+                container.innerHTML = `<video controls autoplay><source src="${url}" type="video/${type}">Video error.</video>`;
+            } else if (type.toLowerCase() === 'pdf' || type.toLowerCase() === 'txt') {
+                container.innerHTML = `<iframe src="${url}"></iframe>`;
+            } else {
+                container.innerHTML = `<div style="text-align:center;"><i class="fas fa-file fa-4x" style="margin-bottom:20px;"></i><br><a href="${url}" download class="btn">Download File</a></div>`;
+            }
+            document.getElementById('previewModal').style.display = 'flex';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('previewContainer').innerHTML = ''; 
+        }
+
+        // FIXED PRINT FUNCTION
+        function printPreview() {
+            if (!currentPrintUrl || currentPrintUrl === '#') {
+                alert("Cannot print this file.");
+                return;
+            }
+
+            const container = document.getElementById('previewContainer');
+            const isImage = container.querySelector('img');
+            
+            // Agar file image hai
+            if (isImage) {
+                let printFrame = document.createElement('iframe');
+                printFrame.style.position = 'fixed';
+                printFrame.style.right = '0';
+                printFrame.style.bottom = '0';
+                printFrame.style.width = '0';
+                printFrame.style.height = '0';
+                printFrame.style.border = '0';
+                document.body.appendChild(printFrame);
+                
+                let doc = printFrame.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <html>
+                    <head><title>Print Image</title></head>
+                    <body style="margin:0; text-align:center;">
+                        <img src="${currentPrintUrl}" style="max-width:100%;" onload="window.focus(); window.print();">
+                    </body>
+                    </html>
+                `);
+                doc.close();
+                
+                // iframe ko thodi der baad hatha dein
+                setTimeout(() => { document.body.removeChild(printFrame); }, 3000);
+            } 
+            // Agar file PDF ya koi aur document hai
+            else {
+                let printWindow = window.open(currentPrintUrl, '_blank');
+                if (printWindow) {
+                    printWindow.onload = function() {
+                        setTimeout(() => printWindow.print(), 500);
+                    };
+                } else {
+                    alert("Please allow pop-ups to print this PDF/Document.");
+                }
+            }
+        }
+
+        // --- 9. ZIP ALL LOGIC ---
+        async function downloadZip() {
+            if (typeof JSZip === 'undefined') {
+                alert('ZIP library is loading from internet. Please wait or check your connection.');
+                return;
+            }
+            
+            let transaction = db.transaction(['files'], 'readonly');
+            let store = transaction.objectStore('files');
+            let request = store.getAll();
+            
+            request.onsuccess = async function() {
+                let files = request.result;
+                let actualFiles = files.filter(f => !f.isLink);
+                
+                if(actualFiles.length === 0) {
+                    alert("No files available to Zip!");
+                    return;
+                }
+                
+                let zip = new JSZip();
+                actualFiles.forEach(f => {
+                    zip.folder(f.category).file(f.filename, f.data);
+                });
+                
+                alert("Generating ZIP... Please wait.");
+                let content = await zip.generateAsync({type:"blob"});
+                let link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = "Riyanshi_Cloud_Backup.zip";
+                link.click();
+            };
+        }
+    </script>
+</body>
+</html>
